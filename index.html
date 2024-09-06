@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Live Tracking</title>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDaeWicvigtP9xPv919E-RNoxfvC-Hqik"></script>
+</head>
+
+<body>
+	<h1>Live Tracking con Google Maps</h1>
+	<div id="map" style="height: 500px; width: 100%;"></div>
+
+	<script>
+		let map;
+		let marker;
+
+		// Inicializa el mapa
+		function iniciarMap() {
+			const mapOptions = {
+				zoom: 10,
+				center: { lat: -34.397, lng: 150.644 },
+			};
+
+			map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+			marker = new google.maps.Marker({
+				position: mapOptions.center,
+				map: map,
+			});
+
+			if (navigator.geolocation) {
+				// Watch Position para seguir el movimiento
+				navigator.geolocation.watchPosition(
+					(position) => {
+						const lat = position.coords.latitude;
+						const lng = position.coords.longitude;
+						const nuevaPosicion = { lat, lng };
+
+						marker.setPosition(nuevaPosicion);
+						map.setCenter(nuevaPosicion);
+
+						// Aquí puedes enviar las coordenadas al servidor usando WebSockets o Fetch
+						enviarCoordenadasAlServidor(lat, lng);
+					},
+					(error) => {
+						console.error("Error en la geolocalización:", error);
+					},
+					{
+						enableHighAccuracy: true, // Mayor precisión
+						timeout: 5000, // Tiempo de espera
+						maximumAge: 0, // Desactiva caché
+					}
+				);
+			} else {
+				console.log("Geolocalización no soportada en este navegador.");
+			}
+		}
+
+		function enviarCoordenadasAlServidor(lat, lng) {
+			fetch("/update-location", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ lat, lng }),
+			})
+				.then((response) => response.json())
+				.then((data) => {
+					console.log("Ubicación enviada:", data);
+				})
+				.catch((error) => {
+					console.error("Error al enviar la ubicación:", error);
+				});
+		}
+
+		window.onload = iniciarMap;
+	</script>
+</body>
+
+</html>
